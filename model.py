@@ -33,7 +33,7 @@ X_train = np.array(augmented_images)
 y_train = np.array(augmented_measurements)
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Lambda, Cropping2D
-from keras.layers.convolution import Convolution2D
+from keras.layers.convolutional import Convolution2D
 from keras.layers.pooling import MaxPooling2D
 
 model = Sequential()
