@@ -44,7 +44,7 @@ model.add(Convolution2D(6,5,5, activation='relu'))
 model.add(MaxPooling2D())
 model.add(Convolution2D(6,5,5, activation='relu'))
 model.add(Flatten())
-model.add(Dense(120))
+model.add(Dense(1))
 
 model.compile(loss='mse', optimizer = 'adam')
 
