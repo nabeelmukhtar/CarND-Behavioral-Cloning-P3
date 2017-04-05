@@ -12,13 +12,20 @@ images = []
 measurements = []
 
 for line in lines[1:]:
-    source_path = line[0]
-    filename = source_path.split('/')[-1]
-    current_path = './data/IMG/' + filename
-    image = cv2.imread(current_path)
-    images.append(image)
-    measurement = float(line[3])
-    measurements.append(measurement)
+    steering_center = float(line[3])
+    correction = 0.2 # this is a parameter to tune
+    steering_left = steering_center + correction
+    steering_right = steering_center - correction
+    
+    center_image = cv2.imread('./data/IMG/' + line[0].split('/')[-1])
+    images.append(center_image)
+    measurements.append(steering_center)
+    left_image = cv2.imread('./data/IMG/' + line[1].split('/')[-1])
+    images.append(left_image)
+    measurements.append(steering_left)
+    right_image = cv2.imread('./data/IMG/' + line[2].split('/')[-1])
+    images.append(right_image)
+    measurements.append(steering_right)
 
 augmented_images = []
 augmented_measurements = []
@@ -31,6 +38,10 @@ for image,measurement in zip(images, measurements):
     
 X_train = np.array(augmented_images)
 y_train = np.array(augmented_measurements)
+
+## Use a gain of 1.5 to increase agressitivity 
+y_train = y_train * 1.5
+
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Lambda, Cropping2D
 from keras.layers.convolutional import Convolution2D
