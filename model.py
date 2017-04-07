@@ -4,22 +4,54 @@ import sklearn
 import numpy as np
 from random import shuffle
 
+def augment_brightness_camera_images(image):
+    image1 = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
+    image1 = np.array(image1, dtype = np.float64)
+    random_bright = .5+np.random.uniform()
+    image1[:,:,2] = image1[:,:,2]*random_bright
+    image1[:,:,2][image1[:,:,2]>255]  = 255
+    image1 = np.array(image1, dtype = np.uint8)
+    image1 = cv2.cvtColor(image1,cv2.COLOR_HSV2RGB)
+    return image1
+    
+def translate_image(image,steer,trans_range):
+    rows,cols,_ = image.shape
+    # Translation
+    tr_x = trans_range*np.random.uniform()-trans_range/2
+    steer_ang = steer + tr_x/trans_range*2*.2
+    tr_y = 40*np.random.uniform()-40/2
+    #tr_y = 0
+    Trans_M = np.float32([[1,0,tr_x],[0,1,tr_y]])
+    image_tr = cv2.warpAffine(image,Trans_M,(cols,rows))
+    
+    return image_tr,steer_ang
+    
+def flip_image(image,steer):
+    image_flip = cv2.flip(image, 1)
+    steer_flip = -1.0 * steer
+    
+    return image_flip,steer_flip
+        
 lines = []
 
 with open('./data/driving_log.csv') as csvfile:
     reader = csv.reader(csvfile)
     skipHeader = True
     for line in reader:
-        if skipHeader:
-            skipHeader = False
-        else:
-            lines.append(line)
+        lines.append(line)
         
 from sklearn.model_selection import train_test_split
 
-train_samples, validation_samples = train_test_split(lines, test_size=0.2)
 
 samples_per_line = 6
+steering_correction = 0.25
+steering_aggressivity = 1.5
+steering_min = 0.1
+steering_keep_prob = 0.5
+
+filtered_samples = [x for x in lines[1:] if float(x[3]) > steering_min or np.random.uniform() < steering_keep_prob]
+
+train_samples, validation_samples = train_test_split(filtered_samples, test_size=0.2)
 
 def generator(samples, batch_size=32):
     num_samples = len(samples)
@@ -32,34 +64,36 @@ def generator(samples, batch_size=32):
             angles = []
             for batch_sample in batch_samples:
                 steering_center = float(batch_sample[3])
-                correction = 0.2 # this is a parameter to tune
-                steering_left = steering_center + correction
-                steering_right = steering_center - correction
+                steering_left = steering_center + steering_correction
+                steering_right = steering_center - steering_correction
     
                 center_image = cv2.imread('./data/IMG/' + batch_sample[0].split('/')[-1])
                 images.append(center_image)
                 angles.append(steering_center)
                 
-                images.append(cv2.flip(center_image, 1))
-                angles.append(steering_center * -1.0)
+                flipped_image, flipped_steering = flip_image(center_image, steering_center)
+                images.append(flipped_image)
+                angles.append(flipped_steering)
                 
                 left_image = cv2.imread('./data/IMG/' + batch_sample[1].split('/')[-1])
                 images.append(left_image)
                 angles.append(steering_left)
 
-                images.append(cv2.flip(left_image, 1))
-                angles.append(steering_left * -1.0)
+                flipped_image, flipped_steering = flip_image(left_image, steering_left)
+                images.append(flipped_image)
+                angles.append(flipped_steering)
 
                 right_image = cv2.imread('./data/IMG/' + batch_sample[2].split('/')[-1])
                 images.append(right_image)
                 angles.append(steering_right)
 
-                images.append(cv2.flip(right_image, 1))
-                angles.append(steering_right * -1.0)
+                flipped_image, flipped_steering = flip_image(right_image, steering_right)
+                images.append(flipped_image)
+                angles.append(flipped_steering)
 
             # trim image to only see section with road
             X_train = np.array(images)
-            y_train = np.array(angles)
+            y_train = np.array(angles) * steering_aggressivity
             yield sklearn.utils.shuffle(X_train, y_train)
 
 # compile and train the model using the generator function
