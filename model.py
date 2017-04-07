@@ -5,14 +5,20 @@ import numpy as np
 from random import shuffle
 
 lines = []
+skipHeader = True
 with open('./data/driving_log.csv') as csvfile:
     reader = csv.reader(csvfile)
-    for line in reader:
-        lines.append(line)
+    if skipHeader:
+        skipHeader = False
+    else:
+        for line in reader:
+            lines.append(line)
         
 from sklearn.model_selection import train_test_split
 
 train_samples, validation_samples = train_test_split(lines, test_size=0.2)
+
+samples_per_line = 6
 
 def generator(samples, batch_size=32):
     num_samples = len(samples)
@@ -86,8 +92,8 @@ model.compile(loss='mse', optimizer = 'adam')
 
 # model.fit(X_train, y_train, nb_epoch=3, validation_split=0.2, shuffle=True)
 
-model.fit_generator(train_generator, samples_per_epoch= len(train_samples), 
+model.fit_generator(train_generator, samples_per_epoch= samples_per_line * len(train_samples), 
                     validation_data=validation_generator, 
-                    nb_val_samples=len(validation_samples), nb_epoch=3)
+                    nb_val_samples=samples_per_line * len(validation_samples), nb_epoch=3)
 
 model.save('model.h5')
