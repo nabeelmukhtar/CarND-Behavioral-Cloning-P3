@@ -129,6 +129,6 @@ model.compile(loss='mse', optimizer = 'adam')
 
 model.fit_generator(train_generator, samples_per_epoch=samples_per_line * len(train_samples), 
                     validation_data=validation_generator, 
-                    nb_val_samples=samples_per_line * len(validation_samples), nb_epoch=3)
+                    nb_val_samples=samples_per_line * len(validation_samples), nb_epoch=5)
 
 model.save('model.h5')
