@@ -14,7 +14,7 @@ def augment_brightness(image):
     image1 = cv2.cvtColor(image1,cv2.COLOR_HSV2RGB)
     return image1
     
-def translate_image(image,steer,trans_range):
+def translate_image(image,steer,trans_range = 100):
     rows,cols,_ = image.shape
     # Translation
     tr_x = trans_range*np.random.uniform()-trans_range/2
