@@ -4,7 +4,7 @@ import sklearn
 import numpy as np
 from random import shuffle
 
-def augment_brightness(image):
+def augment_brightness(image, steer):
     image1 = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
     image1 = np.array(image1, dtype = np.float64)
     random_bright = .5+np.random.uniform()
@@ -12,7 +12,7 @@ def augment_brightness(image):
     image1[:,:,2][image1[:,:,2]>255]  = 255
     image1 = np.array(image1, dtype = np.uint8)
     image1 = cv2.cvtColor(image1,cv2.COLOR_HSV2RGB)
-    return image1
+    return image1, steer
     
 def translate_image(image,steer,trans_range = 100):
     rows,cols,_ = image.shape
@@ -24,23 +24,23 @@ def translate_image(image,steer,trans_range = 100):
     Trans_M = np.float32([[1,0,tr_x],[0,1,tr_y]])
     image_tr = cv2.warpAffine(image,Trans_M,(cols,rows))
     
-    return image_tr,steer_ang
+    return image_tr, steer_ang
     
-def flip_image(image,steer):
+def flip_image(image, steer):
     image_flip = cv2.flip(image, 1)
     steer_flip = -1.0 * steer
     
-    return image_flip,steer_flip
+    return image_flip, steer_flip
 
-def increase_contrast(img):
-    img_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+def increase_contrast(image, steer):
+    img_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
 
     # equalize the histogram of the Y channel
     img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
 
     # convert the YUV image back to RGB format
     img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)    
-    return img_output
+    return img_output, steer
         
 lines = []
 
@@ -113,27 +113,43 @@ def generator(samples, batch_size=32):
 train_generator = generator(train_samples, batch_size=64)
 validation_generator = generator(validation_samples, batch_size=64)
 
-ch, row, col = 3, 80, 320  # Trimmed image format
-
-# Preprocess incoming data, centered around zero with small standard deviation 
-
-## Use a gain of 1.5 to increase agressitivity 
-# y_train = y_train * 1.5
 
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Lambda, Cropping2D
+from keras.layers import Dense, Flatten, Lambda, Cropping2D, Dropout, Activation
 from keras.layers.convolutional import Convolution2D
 from keras.layers.pooling import MaxPooling2D
 
 model = Sequential()
 
+# Preprocess incoming data, centered around zero with small standard deviation 
 model.add(Lambda(lambda x : x / 255.0 - 0.5, input_shape=(160,320,3)))
-# model.add(Lambda(lambda x: x/127.5 - 1., input_shape=(ch, row, col), output_shape=(ch, row, col)))
+
 model.add(Cropping2D(cropping=((70,25), (0,0))))
-model.add(Convolution2D(6,5,5, activation='relu'))
+model.add(Convolution2D(32, 3, 3, activation='elu'))
+model.add(Convolution2D(32, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Convolution2D(6,5,5, activation='relu'))
+model.add(Dropout(0.5))
+
+model.add(Convolution2D(64, 3, 3, activation='elu'))
+model.add(Convolution2D(64, 3, 3, activation='elu'))
+model.add(MaxPooling2D())
+model.add(Dropout(0.5))
+
+model.add(Convolution2D(128, 3, 3, activation='elu'))
+model.add(Convolution2D(128, 3, 3, activation='elu'))
+model.add(MaxPooling2D())
+model.add(Dropout(0.5))
+
 model.add(Flatten())
+
+model.add(Dense(128))
+model.add(Activation('elu'))
+model.add(Dropout(0.5))
+
+model.add(Dense(64))
+model.add(Activation('elu'))
+model.add(Dropout(0.5))
+
 model.add(Dense(1))
 
 model.compile(loss='mse', optimizer = 'adam')
