@@ -14,7 +14,7 @@ def augment_brightness(image):
     image1 = cv2.cvtColor(image1,cv2.COLOR_HSV2RGB)
     return image1
     
-def translate_image(image,steer,trans_range):
+def translate_image(image,steer,trans_range = 100):
     rows,cols,_ = image.shape
     # Translation
     tr_x = trans_range*np.random.uniform()-trans_range/2
@@ -110,8 +110,8 @@ def generator(samples, batch_size=32):
             yield sklearn.utils.shuffle(X_train, y_train)
 
 # compile and train the model using the generator function
-train_generator = generator(train_samples, batch_size=256)
-validation_generator = generator(validation_samples, batch_size=256)
+train_generator = generator(train_samples, batch_size=64)
+validation_generator = generator(validation_samples, batch_size=64)
 
 ch, row, col = 3, 80, 320  # Trimmed image format
 
