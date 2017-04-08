@@ -57,7 +57,7 @@ from sklearn.model_selection import train_test_split
 
 augmentations = [copy_image, flip_image, translate_image, augment_brightness]
 
-samples_per_line = 3 * len(augmentations)
+samples_per_line = 5
 steering_correction = 0.3
 steering_aggressivity = 1.0
 steering_min = 0.05
@@ -81,7 +81,7 @@ def generator(samples, batch_size=32):
             angles = []
             for batch_sample in batch_samples:
                 steering = float(batch_sample[3])
-                image_index = np.random.randint(3)
+                image_index = random.randint(0, 2)
                 image = cv2.imread('./data/IMG/' + batch_sample[image_index].split('/')[-1])
                 if image_index == 1:
                     steering = steering + steering_correction
