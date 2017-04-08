@@ -110,8 +110,8 @@ def generator(samples, batch_size=32):
             yield sklearn.utils.shuffle(X_train, y_train)
 
 # compile and train the model using the generator function
-train_generator = generator(train_samples, batch_size=64)
-validation_generator = generator(validation_samples, batch_size=64)
+train_generator = generator(train_samples, batch_size=32)
+validation_generator = generator(validation_samples, batch_size=32)
 
 
 from keras.models import Sequential
@@ -135,16 +135,16 @@ model.add(Convolution2D(64, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
 model.add(Dropout(0.5))
 
-model.add(Convolution2D(128, 3, 3, activation='elu'))
-model.add(Convolution2D(128, 3, 3, activation='elu'))
-model.add(MaxPooling2D())
-model.add(Dropout(0.5))
+# model.add(Convolution2D(128, 3, 3, activation='elu'))
+# model.add(Convolution2D(128, 3, 3, activation='elu'))
+# model.add(MaxPooling2D())
+# model.add(Dropout(0.5))
 
 model.add(Flatten())
 
-model.add(Dense(128))
-model.add(Activation('elu'))
-model.add(Dropout(0.5))
+# model.add(Dense(128))
+# model.add(Activation('elu'))
+# model.add(Dropout(0.5))
 
 model.add(Dense(64))
 model.add(Activation('elu'))
@@ -158,6 +158,6 @@ model.compile(loss='mse', optimizer = 'adam')
 
 model.fit_generator(train_generator, samples_per_epoch=samples_per_line * len(train_samples), 
                     validation_data=validation_generator, 
-                    nb_val_samples=samples_per_line * len(validation_samples), nb_epoch=8)
+                    nb_val_samples=samples_per_line * len(validation_samples), nb_epoch=5)
 
 model.save('model.h5')
