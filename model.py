@@ -4,7 +4,7 @@ import sklearn
 import numpy as np
 from random import shuffle
 
-def augment_brightness_camera_images(image):
+def augment_brightness(image):
     image1 = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
     image1 = np.array(image1, dtype = np.float64)
     random_bright = .5+np.random.uniform()
@@ -31,6 +31,16 @@ def flip_image(image,steer):
     steer_flip = -1.0 * steer
     
     return image_flip,steer_flip
+
+def increase_contrast(img):
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+
+    # equalize the histogram of the Y channel
+    img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+
+    # convert the YUV image back to RGB format
+    img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)    
+    return img_output
         
 lines = []
 
@@ -42,14 +52,18 @@ with open('./data/driving_log.csv') as csvfile:
         
 from sklearn.model_selection import train_test_split
 
+augmentation_funcs = [flip_image, translate_image]
 
-samples_per_line = 6
-steering_correction = 0.25
-steering_aggressivity = 1.5
-steering_min = 0.1
-steering_keep_prob = 0.5
+samples_per_line = 3 + (3 * len(augmentation_funcs))
+steering_correction = 0.3
+steering_aggressivity = 1.0
+steering_min = 0.05
+steering_keep_prob = 0.8
 
-filtered_samples = [x for x in lines[1:] if float(x[3]) > steering_min or np.random.uniform() < steering_keep_prob]
+# remove images where steering is greater than 0.8
+filtered_samples = [x for x in lines[1:] if float(x[3]) <= 1.0 / steering_aggressivity]
+# remove images where steering is close to 0.
+filtered_samples = [x for x in filtered_samples if float(x[3]) > steering_min or np.random.uniform() < steering_keep_prob]
 
 train_samples, validation_samples = train_test_split(filtered_samples, test_size=0.2)
 
@@ -71,25 +85,24 @@ def generator(samples, batch_size=32):
                 images.append(center_image)
                 angles.append(steering_center)
                 
-                flipped_image, flipped_steering = flip_image(center_image, steering_center)
-                images.append(flipped_image)
-                angles.append(flipped_steering)
-                
                 left_image = cv2.imread('./data/IMG/' + batch_sample[1].split('/')[-1])
                 images.append(left_image)
                 angles.append(steering_left)
 
-                flipped_image, flipped_steering = flip_image(left_image, steering_left)
-                images.append(flipped_image)
-                angles.append(flipped_steering)
-
                 right_image = cv2.imread('./data/IMG/' + batch_sample[2].split('/')[-1])
                 images.append(right_image)
                 angles.append(steering_right)
-
-                flipped_image, flipped_steering = flip_image(right_image, steering_right)
-                images.append(flipped_image)
-                angles.append(flipped_steering)
+                
+                for augment in augmentation_funcs:
+                    augmented_image, augmented_steering = augment(center_image, steering_center)
+                    images.append(augmented_image)
+                    angles.append(augmented_steering)
+                    augmented_image, augmented_steering = augment(left_image, steering_left)
+                    images.append(augmented_image)
+                    angles.append(augmented_steering)
+                    augmented_image, augmented_steering = augment(right_image, steering_right)
+                    images.append(augmented_image)
+                    angles.append(augmented_steering)
 
             # trim image to only see section with road
             X_train = np.array(images)
@@ -97,8 +110,8 @@ def generator(samples, batch_size=32):
             yield sklearn.utils.shuffle(X_train, y_train)
 
 # compile and train the model using the generator function
-train_generator = generator(train_samples, batch_size=32)
-validation_generator = generator(validation_samples, batch_size=32)
+train_generator = generator(train_samples, batch_size=256)
+validation_generator = generator(validation_samples, batch_size=256)
 
 ch, row, col = 3, 80, 320  # Trimmed image format
 
@@ -129,6 +142,6 @@ model.compile(loss='mse', optimizer = 'adam')
 
 model.fit_generator(train_generator, samples_per_epoch=samples_per_line * len(train_samples), 
                     validation_data=validation_generator, 
-                    nb_val_samples=samples_per_line * len(validation_samples), nb_epoch=5)
+                    nb_val_samples=samples_per_line * len(validation_samples), nb_epoch=8)
 
 model.save('model.h5')
