@@ -2,7 +2,7 @@ import csv
 import cv2
 import sklearn
 import numpy as np
-from random import random, shuffle
+import random
 
 def augment_brightness(image, steer):
     image1 = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
@@ -55,7 +55,7 @@ with open('./data/driving_log.csv') as csvfile:
         
 from sklearn.model_selection import train_test_split
 
-augmentations = [copy_image, flip_image, translate_image, augment_brightness, increase_contrast]
+augmentations = [copy_image, flip_image, translate_image, augment_brightness]
 
 samples_per_line = 3 * len(augmentations)
 steering_correction = 0.3
@@ -73,7 +73,7 @@ train_samples, validation_samples = train_test_split(filtered_samples, test_size
 def generator(samples, batch_size=32):
     num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
-        shuffle(samples)
+        random.shuffle(samples)
         for offset in range(0, num_samples, batch_size):
             batch_samples = samples[offset:offset+batch_size]
 
@@ -100,8 +100,8 @@ def generator(samples, batch_size=32):
             yield sklearn.utils.shuffle(X_train, y_train)
 
 # compile and train the model using the generator function
-train_generator = generator(train_samples, batch_size=256)
-validation_generator = generator(validation_samples, batch_size=256)
+train_generator = generator(train_samples, batch_size=128)
+validation_generator = generator(validation_samples, batch_size=128)
 
 
 from keras.models import Sequential
@@ -123,15 +123,15 @@ model.add(Convolution2D(64, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
 model.add(Dropout(0.5))
 
-model.add(Convolution2D(128, 3, 3, activation='elu'))
-model.add(MaxPooling2D())
-model.add(Dropout(0.5))
+# model.add(Convolution2D(128, 3, 3, activation='elu'))
+# model.add(MaxPooling2D())
+# model.add(Dropout(0.5))
 
 model.add(Flatten())
 
-model.add(Dense(128))
-model.add(Activation('elu'))
-model.add(Dropout(0.5))
+# model.add(Dense(128))
+# model.add(Activation('elu'))
+# model.add(Dropout(0.5))
 
 model.add(Dense(64))
 model.add(Activation('elu'))
