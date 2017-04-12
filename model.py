@@ -62,10 +62,8 @@ steering_aggressivity = 1.0
 steering_min = 0.05
 steering_keep_prob = 0.8
 
-# remove images where steering is greater than 0.8
-filtered_samples = [x for x in lines[1:] if abs(float(x[3])) <= 1.0 / steering_aggressivity]
 # remove images where steering is close to 0.
-filtered_samples = [x for x in filtered_samples if abs(float(x[3])) > steering_min or np.random.uniform() < steering_keep_prob]
+filtered_samples = [x for x in lines if abs(float(x[3])) > steering_min or np.random.uniform() < steering_keep_prob]
 
 train_samples, validation_samples = train_test_split(filtered_samples, test_size=0.2)
 
@@ -118,25 +116,25 @@ model.add(Convolution2D(3, 1, 1, activation='elu'))
 
 model.add(Convolution2D(32, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(0.5))
+model.add(Dropout(0.8))
 
 model.add(Convolution2D(64, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(0.5))
+model.add(Dropout(0.8))
 
-# model.add(Convolution2D(128, 3, 3, activation='elu'))
-# model.add(MaxPooling2D())
-# model.add(Dropout(0.5))
+model.add(Convolution2D(128, 3, 3, activation='elu'))
+model.add(MaxPooling2D())
+model.add(Dropout(0.8))
 
 model.add(Flatten())
 
-# model.add(Dense(128))
-# model.add(Activation('elu'))
-# model.add(Dropout(0.5))
+model.add(Dense(128))
+model.add(Activation('elu'))
+model.add(Dropout(0.8))
 
 model.add(Dense(64))
 model.add(Activation('elu'))
-model.add(Dropout(0.5))
+model.add(Dropout(0.8))
 
 model.add(Dense(1))
 
