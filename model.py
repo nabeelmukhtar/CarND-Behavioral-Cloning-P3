@@ -84,7 +84,7 @@ augmentations = [copy_image, flip_image, translate_image, augment_brightness]
 samples_per_line = 5
 
 # Steering correction for left and right images.
-steering_correction = 0.3
+steering_correction = 0.25
 
 # Steering aggressivity to apply, 1.0 means no change.
 steering_aggressivity = 1.0
@@ -98,14 +98,15 @@ steering_keep_prob = 0.8
 # dropout value for model.
 dropout_probability = 0.5
 
-train_samples, validation_samples = train_test_split(lines, test_size=0.2)
+# remove images where steering is close to 0.
+filtered_samples = [x for x in lines if abs(float(x[3])) > steering_min or np.random.uniform() < steering_keep_prob]
+
+train_samples, validation_samples = train_test_split(filtered_samples, test_size=0.2)
 
 def generator(samples, batch_size=32):
+    num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
-        # remove images where steering is close to 0.
-        samples = [x for x in samples if abs(float(x[3])) > steering_min or np.random.uniform() < steering_keep_prob]
         random.shuffle(samples)
-        num_samples = len(samples)
         for offset in range(0, num_samples, batch_size):
             batch_samples = samples[offset:offset+batch_size]
 
