@@ -4,6 +4,13 @@ import sklearn
 import numpy as np
 import random
 
+'''
+This method is inspired from the blog:
+https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9
+[quote]Changing brightness to simulate day and night conditions. 
+We will generate images with different brightness by first converting images to HSV,
+scaling up or down the V channel and converting back to the RGB channel.[quote]
+'''
 def augment_brightness(image, steer):
     image1 = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
     image1 = np.array(image1, dtype = np.float64)
@@ -13,7 +20,14 @@ def augment_brightness(image, steer):
     image1 = np.array(image1, dtype = np.uint8)
     image1 = cv2.cvtColor(image1,cv2.COLOR_HSV2RGB)
     return image1, steer
-    
+
+'''
+This method is inspired from the blog:
+https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9
+[quote]We will shift the camera images horizontally to simulate the effect of 
+car being at different positions on the road, and add an offset corresponding 
+to the shift to the steering angle.[quote]
+'''
 def translate_image(image, steer, trans_range = 100):
     rows,cols,_ = image.shape
     # Translation
@@ -26,15 +40,24 @@ def translate_image(image, steer, trans_range = 100):
     
     return image_tr, steer_ang
     
+'''
+Flip image and steering.
+'''
 def flip_image(image, steer):
     image_flip = cv2.flip(image, 1)
     steer_flip = -1.0 * steer
     
     return image_flip, steer_flip
 
+'''
+A copy image function.
+'''
 def copy_image(image, steer):
     return image, steer
 
+'''
+Increase contrast of an image
+'''
 def increase_contrast(image, steer):
     img_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
 
@@ -54,13 +77,26 @@ with open('./data/driving_log.csv') as csvfile:
         
 from sklearn.model_selection import train_test_split
 
-augmentations = [copy_image, flip_image, translate_image, augment_brightness]
+# An array of augmentation functions. Function is chosen as random from this array.
+augmentations = [copy_image, flip_image, translate_image, augment_brightness, increase_contrast]
 
-samples_per_line = 4
+# How many samples should be augmented from the original data.
+samples_per_line = 6
+
+# Steering correction for left and right images.
 steering_correction = 0.3
+
+# Steering aggressivity to apply, 1.0 means no change.
 steering_aggressivity = 1.0
-steering_min = 0.01
-steering_keep_prob = 0.8
+
+# Minimum steering for random filtering
+steering_min = 0.1
+
+# Steering  probability for random filtering
+steering_keep_prob = 0.5
+
+# dropout value for model.
+dropout_probability = 0.8
 
 # remove images where steering is close to 0.
 filtered_samples = [x for x in lines if abs(float(x[3])) > steering_min or np.random.uniform() < steering_keep_prob]
@@ -100,7 +136,6 @@ def generator(samples, batch_size=32):
 train_generator = generator(train_samples, batch_size=128)
 validation_generator = generator(validation_samples, batch_size=128)
 
-
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Lambda, Cropping2D, Dropout
 from keras.layers.convolutional import Convolution2D
@@ -111,37 +146,30 @@ model = Sequential()
 # Preprocess incoming data, centered around zero with small standard deviation 
 model.add(Lambda(lambda x : x / 255.0 - 0.5, input_shape=(160,320,3)))
 
-model.add(Cropping2D(cropping=((70,25), (0,0))))
+model.add(Cropping2D(cropping=((70, 25), (0, 0))))
 model.add(Convolution2D(3, 1, 1, activation='elu'))
 
 model.add(Convolution2D(32, 3, 3, activation='elu'))
-model.add(Convolution2D(32, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(0.5))
+model.add(Dropout(dropout_probability))
 
 model.add(Convolution2D(64, 3, 3, activation='elu'))
-model.add(Convolution2D(64, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(0.5))
+model.add(Dropout(dropout_probability))
 
 model.add(Convolution2D(128, 3, 3, activation='elu'))
-model.add(Convolution2D(128, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(0.5))
+model.add(Dropout(dropout_probability))
 
 model.add(Flatten())
 
 model.add(Dense(128, activation='elu'))
-    # model.add(Dropout(0.8))
 
 model.add(Dense(64, activation='elu'))
-# model.add(Dropout(0.8))
 
 model.add(Dense(1))
 
 model.compile(loss='mse', optimizer = 'adam')
-
-# model.fit(X_train, y_train, nb_epoch=3, validation_split=0.2, shuffle=True)
 
 model.fit_generator(train_generator, samples_per_epoch=samples_per_line * len(train_samples), 
                     validation_data=validation_generator, 
