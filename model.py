@@ -78,10 +78,10 @@ with open('./data/driving_log.csv') as csvfile:
 from sklearn.model_selection import train_test_split
 
 # An array of augmentation functions. Function is chosen as random from this array.
-augmentations = [copy_image, flip_image, translate_image, augment_brightness, increase_contrast]
+augmentations = [copy_image, flip_image, translate_image, augment_brightness]
 
 # How many samples should be augmented from the original data.
-samples_per_line = 6
+samples_per_line = 5
 
 # Steering correction for left and right images.
 steering_correction = 0.3
@@ -93,20 +93,19 @@ steering_aggressivity = 1.0
 steering_min = 0.1
 
 # Steering  probability for random filtering
-steering_keep_prob = 0.5
+steering_keep_prob = 0.8
 
 # dropout value for model.
-dropout_probability = 0.8
+dropout_probability = 0.5
 
-# remove images where steering is close to 0.
-filtered_samples = [x for x in lines if abs(float(x[3])) > steering_min or np.random.uniform() < steering_keep_prob]
-
-train_samples, validation_samples = train_test_split(filtered_samples, test_size=0.2)
+train_samples, validation_samples = train_test_split(lines, test_size=0.2)
 
 def generator(samples, batch_size=32):
-    num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
+        # remove images where steering is close to 0.
+        samples = [x for x in samples if abs(float(x[3])) > steering_min or np.random.uniform() < steering_keep_prob]
         random.shuffle(samples)
+        num_samples = len(samples)
         for offset in range(0, num_samples, batch_size):
             batch_samples = samples[offset:offset+batch_size]
 
@@ -133,8 +132,8 @@ def generator(samples, batch_size=32):
             yield sklearn.utils.shuffle(X_train, y_train)
 
 # compile and train the model using the generator function
-train_generator = generator(train_samples, batch_size=128)
-validation_generator = generator(validation_samples, batch_size=128)
+train_generator = generator(train_samples, batch_size=256)
+validation_generator = generator(validation_samples, batch_size=256)
 
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Lambda, Cropping2D, Dropout
