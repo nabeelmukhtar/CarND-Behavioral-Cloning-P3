@@ -56,10 +56,10 @@ from sklearn.model_selection import train_test_split
 
 augmentations = [copy_image, flip_image, translate_image, augment_brightness]
 
-samples_per_line = 5
+samples_per_line = 4
 steering_correction = 0.3
 steering_aggressivity = 1.0
-steering_min = 0.05
+steering_min = 0.01
 steering_keep_prob = 0.8
 
 # remove images where steering is close to 0.
@@ -102,7 +102,7 @@ validation_generator = generator(validation_samples, batch_size=128)
 
 
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Lambda, Cropping2D, Dropout, Activation
+from keras.layers import Dense, Flatten, Lambda, Cropping2D, Dropout
 from keras.layers.convolutional import Convolution2D
 from keras.layers.pooling import MaxPooling2D
 
@@ -115,26 +115,27 @@ model.add(Cropping2D(cropping=((70,25), (0,0))))
 model.add(Convolution2D(3, 1, 1, activation='elu'))
 
 model.add(Convolution2D(32, 3, 3, activation='elu'))
+model.add(Convolution2D(32, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(0.8))
+model.add(Dropout(0.5))
 
 model.add(Convolution2D(64, 3, 3, activation='elu'))
+model.add(Convolution2D(64, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(0.8))
+model.add(Dropout(0.5))
 
 model.add(Convolution2D(128, 3, 3, activation='elu'))
+model.add(Convolution2D(128, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(0.8))
+model.add(Dropout(0.5))
 
 model.add(Flatten())
 
-model.add(Dense(128))
-model.add(Activation('elu'))
-model.add(Dropout(0.8))
+model.add(Dense(128, activation='elu'))
+    # model.add(Dropout(0.8))
 
-model.add(Dense(64))
-model.add(Activation('elu'))
-model.add(Dropout(0.8))
+model.add(Dense(64, activation='elu'))
+# model.add(Dropout(0.8))
 
 model.add(Dense(1))
 
