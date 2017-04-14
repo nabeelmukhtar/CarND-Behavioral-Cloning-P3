@@ -3,6 +3,8 @@ import cv2
 import sklearn
 import numpy as np
 import random
+import matplotlib.image as mpimg
+
 
 '''
 This method is inspired from the blog:
@@ -39,6 +41,27 @@ def translate_image(image, steer, trans_range = 100):
     image_tr = cv2.warpAffine(image,Trans_M,(cols,rows))
     
     return image_tr, steer_ang
+
+def add_random_shadow(image, steer):
+    top_y = 320*np.random.uniform()
+    top_x = 0
+    bot_x = 160
+    bot_y = 320*np.random.uniform()
+    image_hls = cv2.cvtColor(image,cv2.COLOR_RGB2HLS)
+    shadow_mask = 0*image_hls[:,:,1]
+    X_m = np.mgrid[0:image.shape[0],0:image.shape[1]][0]
+    Y_m = np.mgrid[0:image.shape[0],0:image.shape[1]][1]
+    shadow_mask[((X_m-top_x)*(bot_y-top_y) -(bot_x - top_x)*(Y_m-top_y) >=0)]=1
+    random_bright = .5
+    cond1 = shadow_mask==1
+    cond0 = shadow_mask==0
+    if np.random.randint(2)==1:
+        image_hls[:,:,1][cond1] = image_hls[:,:,1][cond1]*random_bright
+    else:
+        image_hls[:,:,1][cond0] = image_hls[:,:,1][cond0]*random_bright    
+    image = cv2.cvtColor(image_hls,cv2.COLOR_HLS2RGB)
+
+    return image, steer
     
 '''
 Flip image and steering.
@@ -78,10 +101,11 @@ with open('./data/driving_log.csv') as csvfile:
 from sklearn.model_selection import train_test_split
 
 # An array of augmentation functions. Function is chosen as random from this array.
-augmentations = [copy_image, flip_image, translate_image, augment_brightness]
+augmentations = [copy_image, flip_image, translate_image, augment_brightness,
+                 add_random_shadow, increase_contrast]
 
 # How many samples should be augmented from the original data.
-samples_per_line = 5
+samples_per_line = 8
 
 # Steering correction for left and right images.
 steering_correction = 0.25
@@ -93,7 +117,7 @@ steering_aggressivity = 1.0
 steering_min = 0.1
 
 # Steering  probability for random filtering
-steering_keep_prob = 0.8
+steering_keep_prob = 0.5
 
 # dropout value for model.
 dropout_probability = 0.5
@@ -115,7 +139,7 @@ def generator(samples, batch_size=32):
             for batch_sample in batch_samples:
                 steering = float(batch_sample[3])
                 image_index = random.randint(0, 2)
-                image = cv2.imread('./data/IMG/' + batch_sample[image_index].split('/')[-1])
+                image = mpimg.imread('./data/IMG/' + batch_sample[image_index].split('/')[-1])
                 if image_index == 1:
                     steering = steering + steering_correction
                 elif image_index == 2:
@@ -133,8 +157,8 @@ def generator(samples, batch_size=32):
             yield sklearn.utils.shuffle(X_train, y_train)
 
 # compile and train the model using the generator function
-train_generator = generator(train_samples, batch_size=256)
-validation_generator = generator(validation_samples, batch_size=256)
+train_generator = generator(train_samples, batch_size=128)
+validation_generator = generator(validation_samples, batch_size=128)
 
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Lambda, Cropping2D, Dropout
@@ -149,23 +173,22 @@ model.add(Lambda(lambda x : x / 255.0 - 0.5, input_shape=(160,320,3)))
 model.add(Cropping2D(cropping=((70, 25), (0, 0))))
 model.add(Convolution2D(3, 1, 1, activation='elu'))
 
-model.add(Convolution2D(32, 3, 3, activation='elu'))
+model.add(Convolution2D(32, 5, 5, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(dropout_probability))
 
 model.add(Convolution2D(64, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(dropout_probability))
 
 model.add(Convolution2D(128, 3, 3, activation='elu'))
 model.add(MaxPooling2D())
-model.add(Dropout(dropout_probability))
 
 model.add(Flatten())
 
 model.add(Dense(128, activation='elu'))
+model.add(Dropout(dropout_probability))
 
 model.add(Dense(64, activation='elu'))
+model.add(Dropout(dropout_probability))
 
 model.add(Dense(1))
 
