@@ -4,7 +4,11 @@ import sklearn
 import numpy as np
 import random
 import matplotlib.image as mpimg
-
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Flatten, Lambda, Cropping2D, Dropout
+from keras.layers.convolutional import Convolution2D
+from keras.layers.pooling import MaxPooling2D
+from sklearn.model_selection import train_test_split
 
 '''
 This method is inspired from the blog:
@@ -79,17 +83,17 @@ def copy_image(image, steer):
     return image, steer
 
 '''
-Increase contrast of an image
+Convert image to yuv scale.
 '''
-def increase_contrast(image, steer):
+def yuv_scale(image, steer):
     img_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
 
     # equalize the histogram of the Y channel
     img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
 
     # convert the YUV image back to RGB format
-    img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)    
-    return img_output, steer
+    # img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)    
+    return img_yuv, steer
         
 lines = []
 
@@ -98,11 +102,9 @@ with open('./data/driving_log.csv') as csvfile:
     for line in reader:
         lines.append(line)
         
-from sklearn.model_selection import train_test_split
-
 # An array of augmentation functions. Function is chosen as random from this array.
 augmentations = [copy_image, flip_image, translate_image, augment_brightness,
-                 add_random_shadow, increase_contrast]
+                 add_random_shadow]
 
 # How many samples should be augmented from the original data.
 samples_per_line = 8
@@ -160,39 +162,44 @@ def generator(samples, batch_size=32):
 train_generator = generator(train_samples, batch_size=128)
 validation_generator = generator(validation_samples, batch_size=128)
 
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Lambda, Cropping2D, Dropout
-from keras.layers.convolutional import Convolution2D
-from keras.layers.pooling import MaxPooling2D
+use_transfer_learning = False
 
-model = Sequential()
-
-# Preprocess incoming data, centered around zero with small standard deviation 
-model.add(Lambda(lambda x : x / 255.0 - 0.5, input_shape=(160,320,3)))
-
-model.add(Cropping2D(cropping=((70, 25), (0, 0))))
-model.add(Convolution2D(3, 1, 1, activation='elu'))
-
-model.add(Convolution2D(32, 5, 5, activation='elu'))
-model.add(MaxPooling2D())
-
-model.add(Convolution2D(64, 3, 3, activation='elu'))
-model.add(MaxPooling2D())
-
-model.add(Convolution2D(128, 3, 3, activation='elu'))
-model.add(MaxPooling2D())
-
-model.add(Flatten())
-
-model.add(Dense(128, activation='elu'))
-model.add(Dropout(dropout_probability))
-
-model.add(Dense(64, activation='elu'))
-model.add(Dropout(dropout_probability))
-
-model.add(Dense(1))
-
-model.compile(loss='mse', optimizer = 'adam')
+# define model
+if use_transfer_learning:
+    model = load_model('model.h5')
+else:
+    model = Sequential()
+    
+    # Preprocess incoming data, increase contrast 
+    model.add(Lambda(lambda x : yuv_scale(x), input_shape=(160, 320, 3)))
+    
+    # Preprocess incoming data, centered around zero with small standard deviation 
+    model.add(Lambda(lambda x : x / 255.0 - 0.5))
+    
+    model.add(Cropping2D(cropping=((70, 25), (0, 0))))
+    model.add(Convolution2D(3, 1, 1, activation='elu'))
+    
+    model.add(Convolution2D(32, 5, 5, activation='elu'))
+    model.add(MaxPooling2D())
+    
+    model.add(Convolution2D(64, 3, 3, activation='elu'))
+    model.add(MaxPooling2D())
+    
+    model.add(Convolution2D(128, 3, 3, activation='elu'))
+    model.add(MaxPooling2D())
+    
+    model.add(Flatten())
+    
+    model.add(Dense(128, activation='elu'))
+    model.add(Dropout(dropout_probability))
+    
+    model.add(Dense(64, activation='elu'))
+    model.add(Dropout(dropout_probability))
+    
+    model.add(Dense(1))
+    
+    model.compile(loss='mse', optimizer = 'adam')
+    model.summary()
 
 model.fit_generator(train_generator, samples_per_epoch=samples_per_line * len(train_samples), 
                     validation_data=validation_generator, 
