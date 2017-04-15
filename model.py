@@ -83,17 +83,28 @@ def copy_image(image, steer):
     return image, steer
 
 '''
-Convert image to yuv scale.
+Increase contrast of an image
 '''
-def yuv_scale(image, steer):
+def increase_contrast(image, steer):
     img_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
 
     # equalize the histogram of the Y channel
     img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
 
     # convert the YUV image back to RGB format
-    # img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)    
-    return img_yuv, steer
+    img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2RGB)    
+    return img_output, steer
+
+'''
+Convert image to yuv scale.
+'''
+def yuv_scale(image):
+    img_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
+
+    # equalize the histogram of the Y channel
+    img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+
+    return img_yuv
         
 lines = []
 
@@ -104,7 +115,7 @@ with open('./data/driving_log.csv') as csvfile:
         
 # An array of augmentation functions. Function is chosen as random from this array.
 augmentations = [copy_image, flip_image, translate_image, augment_brightness,
-                 add_random_shadow]
+                 add_random_shadow, increase_contrast]
 
 # How many samples should be augmented from the original data.
 samples_per_line = 8
@@ -170,11 +181,8 @@ if use_transfer_learning:
 else:
     model = Sequential()
     
-    # Preprocess incoming data, increase contrast 
-    model.add(Lambda(lambda x : yuv_scale(x), input_shape=(160, 320, 3)))
-    
     # Preprocess incoming data, centered around zero with small standard deviation 
-    model.add(Lambda(lambda x : x / 255.0 - 0.5))
+    model.add(Lambda(lambda x : x / 255.0 - 0.5, input_shape=(160,320,3)))
     
     model.add(Cropping2D(cropping=((70, 25), (0, 0))))
     model.add(Convolution2D(3, 1, 1, activation='elu'))
