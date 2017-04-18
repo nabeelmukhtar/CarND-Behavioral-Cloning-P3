@@ -10,8 +10,8 @@ from keras.layers.convolutional import Convolution2D
 from keras.layers.pooling import MaxPooling2D
 from sklearn.model_selection import train_test_split
 
-def augment_brightness(image, steer):
 
+def augment_brightness(image, steer):
     """
     This method is inspired from the blog:
     https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9
@@ -30,7 +30,6 @@ def augment_brightness(image, steer):
 
 
 def translate_image(image, steer, trans_range=100):
-
     """
     This method is inspired from the blog:
     https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9
@@ -51,7 +50,6 @@ def translate_image(image, steer, trans_range=100):
 
 
 def flip_image(image, steer):
-
     """
     Flip image and steering.
     """
@@ -62,7 +60,6 @@ def flip_image(image, steer):
 
 
 def copy_image(image, steer):
-
     """
     A copy image function.
     """
@@ -70,7 +67,6 @@ def copy_image(image, steer):
 
 
 def increase_contrast(image, steer):
-
     """
     Increase contrast of the image.
     """
@@ -100,7 +96,7 @@ augmentations = [copy_image, flip_image, translate_image, augment_brightness,
 samples_per_line = 8
 
 # Steering correction for left and right images.
-steering_correction = 0.3
+steering_correction = 0.25
 
 # Steering aggressivity to apply, 1.0 means no change.
 steering_aggressivity = 1.0
@@ -120,6 +116,7 @@ filtered_samples = [x for x in lines if abs(
 
 train_samples, validation_samples = train_test_split(
     filtered_samples, test_size=0.3)
+
 
 def generator(samples, batch_size=32):
     num_samples = len(samples)
@@ -190,7 +187,7 @@ else:
     model.add(Dense(1))
 
     model.compile(loss='mse', optimizer='adam')
-    
+
     model.summary()
 
 model.fit_generator(
@@ -200,6 +197,6 @@ model.fit_generator(
     validation_data=validation_generator,
     nb_val_samples=samples_per_line *
     len(validation_samples),
-    nb_epoch=8)
+    nb_epoch=6)
 
 model.save('model.h5')
