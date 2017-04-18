@@ -97,6 +97,9 @@ The final model architecture (model.py lines 18-24) consisted of a convolution n
 
 Here is a visualization of the architecture (note: visualizing the architecture is optional according to the project rubric)
 
+![png](model.png)
+
+
 #### 3. Creation of the Training Set & Training Process
 * I started with the dataset that was provided by udacity and contained ~8000 samples. While training I found that the data was not enough for vehicle recovery as it was getting off the road after the bridge.
 * I then recorded the vehicle recovering from the left side and right sides of the road back to center so that the vehicle would learn to get back on track when needed. These images show what a recovery looks like starting from ... :
