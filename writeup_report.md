@@ -76,7 +76,7 @@ At the end of the process, the vehicle is able to drive autonomously around the 
 
 The final model architecture (model.py lines 18-24) consisted of a convolution neural network with the following layers and layer sizes.
 
-| Layer                          |     Output  Shape   | Parans |
+| Layer                          |     Output  Shape   | Params |
 |:------------------------------:|:-------------------:|:------:|
 | lambda_2 (Lambda)              | (None, 160, 320, 3) | 0      |
 | cropping2d_2 (Cropping2D)      | (None, 65, 320, 3)  | 0      |
