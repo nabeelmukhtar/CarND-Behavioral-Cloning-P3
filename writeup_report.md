@@ -1,5 +1,6 @@
+# Self-Driving Car Engineer Nanodegree
 
-# Behavioral Cloning Project
+## Behavioral Cloning Project
 
 The goals / steps of this project are the following:
 * Use the simulator to collect data of good driving behavior
@@ -113,19 +114,19 @@ Here is a visualization of the architecture (note: visualizing the architecture 
 * To augment the data set, I used these techniques (a technique was picked at random for each sample image):
   1. Changed brightness randomly. Got the idea and code from https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9.
   2. Increased contrast.
-  3. Translated image and steering. Again got some help from the blog.
+  3. Translated image randomly about 100 pixels and adjusted steering . Again got some help from the blog.
   4. Flipped image and steering. Got the idea and code from the lessons.
   5. Used left and right images with steering correction of 0.25. Got the idea and code from the lessons.
 
 
-* I also tried these augmentation techniques but they did not help improve the accuracy.
+* I also tried these augmentation techniques but they did not help improve the accuracy so dropped them.
   1. Adding random shadow. Got the idea and code from https://chatbotslife.com/using-augmentation-to-mimic-human-driving-496b569760a9
   2. Adding noise.
 
 
 * After the collection process, I had about 22000 number of data points. I then preprocessed this data by using these techniques:
-  1. Cropping. Got the idea and code from the lessons.
-  2. Normalization. Got the idea and code from the lessons.
+  1. Cropping. Cropped the above 70 and lower 25 pixels as they contained noise. Got the idea and code from the lessons.
+  2. Normalization. Nromalized the image to zero mean and small standard deviation. Got the idea and code from the lessons.
 
 
 * I also tried these preprocessing techniques but they did not help improve the accuracy.
