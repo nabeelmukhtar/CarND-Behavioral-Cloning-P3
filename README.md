@@ -1,5 +1,4 @@
 # Self-Driving Car Engineer Nanodegree
-
 ## Behavioral Cloning Project
 
 The goals / steps of this project are the following:
@@ -8,11 +7,6 @@ The goals / steps of this project are the following:
 * Train and validate the model with a training and validation set
 * Test that the model successfully drives around track one without leaving the road
 * Summarize the results with a written report
-
-
-## Rubric Points
-### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
-
 
 ### Files Submitted & Code Quality
 #### 1. Submission includes all required files and can be used to run the simulator in autonomous mode
